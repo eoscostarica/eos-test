@@ -22,3 +22,8 @@ Publishing contract...
 error 2020-02-17T21:56:40.409 cleos     main.cpp:4013                 main                 ] Failed with error: deadline 2020-02-17T21:56:40.396 exceeded by 120us  (2)
 deadline 2020-02-17T21:56:40.396 exceeded by 120us
 ```
+
+The other thing I tried was following along the `boot-tutorial` at the eosio project,
+you can see the latest code in the `/eosio-boot-tutorial` directory, and if you want to take
+that for a spin, just `make run-boot-tutorial`, and you'll find that the result is the same I got
+with my custom docker setup.

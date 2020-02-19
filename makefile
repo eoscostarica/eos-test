@@ -4,12 +4,14 @@ EOSIO_PUBKEY=EOS8hG5XKMrSep4xzZq3ivQ5mLn3apLTpCmmbDP1L272nrBnz9yqG
 EOSIO_WALLET_MASTER_PVTKEY=5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
 EOSIO_WALLET_MASTER_PUBKEY=EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
 GENESIS_JSON=./genesis.json
-IP=$(shell hostname -I | awk '{print $$1}')
+WALLET_PWD_NAME=default
+IP=$(shell ipconfig getifaddr en0 || hostname -I | awk '{print $$1}')
 WALLET_URL=http://$(IP):8889
 SEED_NODE_URL=http://$(IP):8888
 
 PRODUCER_TAG="issue/test-producer:$(shell git ls-files -s services/producer | git hash-object --stdin)"
 WALLET_TAG="issue/test-wallet:$(shell git ls-files -s services/wallet | git hash-object --stdin)"
+BOOT_TUTORIAL_TAG="issue/boot-tutorial:$(shell git ls-files -s eosio-boot-tutorial | git hash-object --stdin)"
 
 ifneq ("$(wildcard .env)", "")
 	export $(shell sed 's/=.*//' .env)
@@ -33,6 +35,11 @@ delete-volumes: stop-all
 		services/producer/data-dir \
 		services/wallet/data-dir;
 
+build-boot-tutorial:
+	@docker build \
+		-t $(BOOT_TUTORIAL_TAG) \
+		./eosio-boot-tutorial;
+
 build-wallet:
 	@docker build \
 		-t $(WALLET_TAG) \
@@ -42,6 +49,11 @@ build-producer:
 	@docker build \
 		-t $(PRODUCER_TAG) \
 		services/producer;
+
+run-boot-tutorial: build-boot-tutorial
+	@docker run \
+		-it --entrypoint bash \
+		$(BOOT_TUTORIAL_TAG)
 
 run-producer: build-producer
 	@docker run \
