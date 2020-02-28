@@ -104,7 +104,10 @@ def startNode(nodeIndex, account):
         args.nodeos +
         '    --max-irreversible-block-age -1'
         '    --max-transaction-time=100000'
+        '    --abi-serializer-max-time-ms=10000'
+        '    --http-max-response-time-ms=10000'
         '    --contracts-console'
+        '    --wasm-runtime wabt'
         '    --genesis-json ' + os.path.abspath(args.genesis) +
         '    --blocks-dir ' + os.path.abspath(dir) + '/blocks'
         '    --config-dir ' + os.path.abspath(dir) +
