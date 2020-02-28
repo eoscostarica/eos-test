@@ -15,8 +15,6 @@ start_keosd() {
     --wallet-dir $DATA_DIR \
     --unlock-timeout 999999999 \
     --http-server-address=0.0.0.0:8888 \
-    --http-alias=wallet.interxlocal.io \
-    --http-alias=wallet.interx.eosio.cr \
     --http-validate-host 0 \
     --verbose-http-errors \
     &

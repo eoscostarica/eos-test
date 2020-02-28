@@ -20,7 +20,7 @@ endif
 MAKE_ENV := EOSIO_PVTKEY EOSIO_PUBKEY
 MAKE_ENV := GENESIS_JSON
 MAKE_ENV += EOSIO_WALLET_MASTER_PVTKEY EOSIO_WALLET_MASTER_PUBKEY
-MAKE_ENV += WALLET_URL SEED_NODE_URL
+MAKE_ENV += WALLET_URL SEED_NODE_URL IP
 
 SHELL_EXPORT := $(foreach v,$(MAKE_ENV),$(v)='$($(v))')
 
@@ -50,15 +50,17 @@ build-producer:
 		-t $(PRODUCER_TAG) \
 		services/producer;
 
-run-boot-tutorial: build-boot-tutorial
+run-boot-tutorial: delete-volumes run-producer run-wallet build-boot-tutorial
 	@docker run \
 		-it --entrypoint bash \
+		--env IP=$(IP) \
 		$(BOOT_TUTORIAL_TAG)
 
 run-producer: build-producer
 	@docker run \
 		-dit \
 		--env DATA_DIR=/root/data-dir \
+		--env IP=$(IP) \
 		--env CONFIG_DIR=/opt/application/config \
 		--volume $(PWD)/services/producer/data-dir:/root/data-dir \
 		-p 0.0.0.0:8888:8888 \
@@ -70,6 +72,7 @@ run-wallet: build-wallet
 		-dit \
 		--env DATA_DIR=/root/data-dir \
 		--env CONFIG_DIR=/opt/application/config \
+		--env IP=$(IP) \
 		--volume $(PWD)/services/wallet/data-dir:/root/data-dir \
 		-p 0.0.0.0:8889:8888 \
 		$(WALLET_TAG)

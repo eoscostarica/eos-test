@@ -5,6 +5,15 @@ This is a test project with two ideas, eventually provide a showcase using
 docker to provide a private network that could be almost production ready;
 the other idea is to ask the community for a bug we're facing with 2.0.x
 
+# UPDATE - 02/28
+I recently started to work directly with the python script since is the one that has given me the best results so far.
+
+So the proces goes like this so far:
+- We start a producer node and a wallet node, the producer node doesn't have the genesis json information at all.
+- The boot node has the genesis.json file, and is the one we interact with for publishing contracts, features and actions.
+- Right now, the old version of the smart contracts (needed for activation of `WTMSIG_BLOCK_SIGNATURES` feature), is published using brute force.
+- The newest version of the smart contracts (1.9.x) is not being deployed, it keeps failing with roughly the same bugs as the old version of the smart contracts but it never gets published despite of retrying lots of times.
+
 ## Running the project
 Before you run the project, you should have Docker installed.
 

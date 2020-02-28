@@ -22,8 +22,6 @@ RUN apt-get update && apt-get install -y build-essential wget cmake python3-pip 
 
 # Define working directory
 WORKDIR $WORK_DIR
-# Copy application code
-COPY ./ $WORK_DIR
 
 RUN wget -O /eosio-v2.0.1.deb $EOSIO_PACKAGE_URL \
   && wget -O /eosio-cdt-v1.7.0.deb $EOSIO_CDT_URL \
@@ -42,6 +40,9 @@ RUN apt-get install -y /eosio-cdt-v1.7.0.deb \
   && ./build.sh -e /usr/opt/eosio/2.0.1 -c /usr/opt/eosio.cdt/1.7.0 -y
 
 RUN pip3 install argparse numpy
+
+# Copy application code
+COPY ./ $WORK_DIR
 
 RUN chmod +x $WORK_DIR/start.sh
 

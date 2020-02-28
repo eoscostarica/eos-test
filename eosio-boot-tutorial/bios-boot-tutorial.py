@@ -68,10 +68,10 @@ def sleep(t):
     print('resume')
 
 def startWallet():
-    run('rm -rf ' + os.path.abspath(args.wallet_dir))
-    run('mkdir -p ' + os.path.abspath(args.wallet_dir))
-    background(args.keosd + ' --unlock-timeout %d --http-server-address 127.0.0.1:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
-    sleep(.4)
+    # run('rm -rf ' + os.path.abspath(args.wallet_dir))
+    # run('mkdir -p ' + os.path.abspath(args.wallet_dir))
+    # background(args.keosd + ' --unlock-timeout %d --http-server-address 127.0.0.1:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
+    # sleep(.4)
     run(args.cleos + 'wallet create --to-console')
 
 def importKeys():
@@ -95,15 +95,15 @@ def startNode(nodeIndex, account):
     dir = args.nodes_dir + ('%02d-' % nodeIndex) + account['name'] + '/'
     run('rm -rf ' + dir)
     run('mkdir -p ' + dir)
-    otherOpts = ''.join(list(map(lambda i: '    --p2p-peer-address localhost:' + str(9000 + i), range(nodeIndex))))
-    if not nodeIndex: otherOpts += (
-        '    --plugin eosio::history_plugin'
-        '    --plugin eosio::history_api_plugin'
-    )
+    # otherOpts = ''.join(list(map(lambda i: '    --p2p-peer-address localhost:' + str(9000 + i), range(nodeIndex))))
+    # if not nodeIndex: otherOpts += (
+    #     '    --plugin eosio::history_plugin'
+    #     '    --plugin eosio::history_api_plugin'
+    # )
     cmd = (
         args.nodeos +
         '    --max-irreversible-block-age -1'
-        '    --max-transaction-time=1000'
+        '    --max-transaction-time=100000'
         '    --contracts-console'
         '    --genesis-json ' + os.path.abspath(args.genesis) +
         '    --blocks-dir ' + os.path.abspath(dir) + '/blocks'
@@ -121,8 +121,9 @@ def startNode(nodeIndex, account):
         '    --plugin eosio::chain_api_plugin'
         '    --plugin eosio::chain_plugin'
         '    --plugin eosio::producer_api_plugin'
-        '    --plugin eosio::producer_plugin' +
-        otherOpts)
+        '    --p2p-peer-address 192.168.0.29:8888'
+        '    --plugin eosio::producer_plugin'
+        )
     with open(dir + 'stderr', mode='w') as f:
         f.write(cmd + '\n\n')
     background(cmd + '    2>>' + dir + 'stderr')
@@ -172,7 +173,7 @@ def createStakedAccounts(b, e):
         stakeCpu = stake - stakeNet
         print('%s: total funds=%s, ram=%s, net=%s, cpu=%s, unstaked=%s' % (a['name'], intToCurrency(a['funds']), intToCurrency(ramFunds), intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(unstaked)))
         assert(funds == ramFunds + stakeNet + stakeCpu + unstaked)
-        retry(args.cleos + 'system newaccount --transfer eosio %s %s --stake-net "%s" --stake-cpu "%s" --buy-ram "%s"   ' % 
+        retry(args.cleos + 'system newaccount --transfer eosio %s %s --stake-net "%s" --stake-cpu "%s" --buy-ram "%s"   ' %
             (a['name'], a['pub'], intToCurrency(stakeNet), intToCurrency(stakeCpu), intToCurrency(ramFunds)))
         if unstaked:
             retry(args.cleos + 'transfer eosio %s "%s"' % (a['name'], intToCurrency(unstaked)))
@@ -247,7 +248,7 @@ def msigProposeReplaceSystem(proposer, proposalName):
     trxPermissions = [{'actor': 'eosio', 'permission': 'active'}]
     with open(fastUnstakeSystem, mode='rb') as f:
         setcode = {'account': 'eosio', 'vmtype': 0, 'vmversion': 0, 'code': f.read().hex()}
-    run(args.cleos + 'multisig propose ' + proposalName + jsonArg(requestedPermissions) + 
+    run(args.cleos + 'multisig propose ' + proposalName + jsonArg(requestedPermissions) +
         jsonArg(trxPermissions) + 'eosio setcode' + jsonArg(setcode) + ' -p ' + proposer)
 
 def msigApproveReplaceSystem(proposer, proposalName):
@@ -296,12 +297,12 @@ def stepCreateTokens():
     run(args.cleos + 'push action eosio.token issue \'["eosio", "%s", "memo"]\' -p eosio' % intToCurrency(totalAllocation))
     sleep(1)
 def stepSetSystemContract():
-    # All of the protocol upgrade features introduced in v1.8 first require a special protocol 
-    # feature (codename PREACTIVATE_FEATURE) to be activated and for an updated version of the system 
-    # contract that makes use of the functionality introduced by that feature to be deployed. 
+    # All of the protocol upgrade features introduced in v1.8 first require a special protocol
+    # feature (codename PREACTIVATE_FEATURE) to be activated and for an updated version of the system
+    # contract that makes use of the functionality introduced by that feature to be deployed.
 
     # activate PREACTIVATE_FEATURE before installing eosio.system
-    retry('curl -X POST http://127.0.0.1:%d' % args.http_port + 
+    retry('curl -X POST http://127.0.0.1:%d' % args.http_port +
         '/v1/producer/schedule_protocol_feature_activations ' +
         '-d \'{"protocol_features_to_activate": ["0ec7e080177b2c02b278d5088611686b49d739925a92d9bfcacd7fc6b74053bd"]}\'')
     sleep(3)
@@ -353,7 +354,7 @@ def stepRegProducers():
     sleep(1)
     listProducers()
 def stepStartProducers():
-    startProducers(firstProducer, firstProducer + numProducers)
+    # startProducers(firstProducer, firstProducer + numProducers)
     sleep(args.producer_sync_delay)
 def stepVote():
     vote(0, 0 + args.num_voters)
@@ -431,7 +432,7 @@ for (flag, command, function, inAll, help) in commands:
         parser.add_argument('-' + flag, '--' + command, action='store_true', help=help, dest=command)
     else:
         parser.add_argument('--' + command, action='store_true', help=help, dest=command)
-        
+
 args = parser.parse_args()
 
 args.cleos += '--url http://127.0.0.1:%d ' % args.http_port

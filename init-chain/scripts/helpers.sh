@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 
-# Throws error when using unset variable
-set -uex
+set -x
+
+BOOT_NODE_URL=http://0.0.0.0:8888
 
 # Alias cleos with endpoint param to avoid repetition
 cleos="cleos -u $SEED_NODE_URL --wallet-url $WALLET_URL"
 # Alias bcleos with endpoint parameter pointing at local boot node
-bcleos="cleos -u http://0.0.0.0:8888 --wallet-url $WALLET_URL"
+bcleos="cleos -u $BOOT_NODE_URL --wallet-url $WALLET_URL"
+
+function retry () {
+  until $1;
+  do
+    echo "Retrying command $1";
+    sleep 3;
+  done
+}
 
 # Unlocks the default wallet and waits .5 seconds
 function unlock_wallet () {
@@ -66,6 +75,7 @@ function startBoot () {
   mkdir -p /var/log/nodeos;
   nodeos \
     --max-irreversible-block-age -1 \
+    --max-transaction-time=100000 \
     --contracts-console \
     --genesis-json $GENESIS_JSON \
     --blocks-dir /opt/data-dir/bocks \
@@ -74,7 +84,7 @@ function startBoot () {
     --chain-state-db-size-mb 1024 \
     --http-server-address 0.0.0.0:8888 \
     --p2p-listen-endpoint 0.0.0.0:9999 \
-    --p2p-peer-address 192.168.1.113:9876 \
+    --p2p-peer-address $IP:9876 \
     --enable-stale-production \
     --producer-name eosio \
     --private-key "[\"$EOSIO_WALLET_MASTER_PUBKEY\", \"$EOSIO_WALLET_MASTER_PVTKEY\"]" \
@@ -90,18 +100,46 @@ function startBoot () {
 function set_system_contract () {
   # get the PREACTIVATE_FEATURE key
   PREACTIVATE_FEATURE=$(http POST \
-    $SEED_NODE_URL/v1/producer/get_supported_protocol_features \
+    $BOOT_NODE_URL/v1/producer/get_supported_protocol_features \
     | jq -r '.[] | select(.specification[].value == "PREACTIVATE_FEATURE") | .feature_digest' \
   );
 
   echo "Activating protocol features...";
-  http --ignore-stdin POST \
-    $SEED_NODE_URL/v1/producer/schedule_protocol_feature_activations \
-    body="{\"protocol_features_to_activate\": [\"$PREACTIVATE_FEATURE\"]}";
+  # retry "http --ignore-stdin POST $BOOT_NODE_URL/v1/producer/schedule_protocol_feature_activations body='{\"protocol_features_to_activate\": [\"$PREACTIVATE_FEATURE\"]}'"
+  # until http --ignore-stdin POST \
+  #   $BOOT_NODE_URL/v1/producer/schedule_protocol_feature_activations \
+  #   body="{\"protocol_features_to_activate\": [\"$PREACTIVATE_FEATURE\"]}";
+  # do
+  #   echo "Retrying to send PREACTIVATE_FEATURE";
+  #   sleep 3s;
+  # done
 
-  sleep 3s;
+  until curl \
+    -X POST \
+    $BOOT_NODE_URL/v1/producer/schedule_protocl_feature_activations \
+    -d '{"protocol_features_to_activate": ["0ec7e080177b2c02b278d5088611686b49d739925a92d9bfcacd7fc6b74053bd"]}';
+  do
+    echo "Retrying to send PREACTIVATE_FEATURE";
+    sleep 3s;
+  done
 
-  $bcleos set contract eosio $EOSIO_OLD_CONTRACTS/eosio.system/ -p eosio
+  # i=0
+  # until [$i -ge 5];
+  # do
+  #   $bcleos set contract eosio $EOSIO_OLD_CONTRACTS/eosio.system/ -p eosio -x 80s \
+  #     && break;
+  #   i=$[$i+1];
+  #   sleep 5;
+  # done
+
+  retry "$bcleos set contract eosio $EOSIO_OLD_CONTRACTS/eosio.system/ -p eosio -x 80s"
+  # until $bcleos set contract eosio $EOSIO_OLD_CONTRACTS/eosio.system/ -p eosio -x 80s;
+  # do
+  #   echo 'Retrying set contract command';
+  #   sleep 3s;
+  # done
+
+  # $bcleos set contract eosio $EOSIO_OLD_CONTRACTS/eosio.system/ -p eosio
 
   echo "Activating protocol features...";
   # GET_SENDER

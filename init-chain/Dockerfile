@@ -22,8 +22,6 @@ RUN apt-get update && apt-get install -y httpie wget build-essential cmake \
 
 # Define working directory
 WORKDIR $WORK_DIR
-# Copy application code
-COPY ./ $WORK_DIR
 
 RUN wget -O /eosio-v2.0.1.deb $EOSIO_PACKAGE_URL \
   && wget -O /eosio-cdt-v1.7.0.deb $EOSIO_CDT_URL \
@@ -40,6 +38,9 @@ RUN apt-get install -y /eosio-cdt-v1.7.0.deb \
   && git clone https://github.com/EOSIO/eosio.contracts.git /opt/eosio.contracts \
   && cd /opt/eosio.contracts && git checkout release/1.9.x \
   && ./build.sh -e /usr/opt/eosio/2.0.1 -c /usr/opt/eosio.cdt/1.7.0 -y
+
+# Copy application code
+COPY ./ $WORK_DIR
 
 RUN chmod -R +x $WORK_DIR/scripts/
 

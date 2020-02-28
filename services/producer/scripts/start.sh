@@ -14,7 +14,8 @@ start_nodeos() {
   nodeos \
     --config-dir $CONFIG_DIR \
     --data-dir $DATA_DIR \
-    --max-transaction-time 1000 \
+    --p2p-listen-endpoint 0.0.0.0:9876 \
+    --private-key "[\"$EOSIO_WALLET_MASTER_PUBKEY\", \"$EOSIO_WALLET_MASTER_PVTKEY\"]" \
     -e \
     &
   sleep 5;
@@ -23,7 +24,7 @@ start_nodeos() {
     nodeos \
       --config-dir $CONFIG_DIR \
       --data-dir $DATA_DIR \
-      --max-transaction-time 1000 \
+      --private-key "[\"$EOSIO_WALLET_MASTER_PUBKEY\", \"$EOSIO_WALLET_MASTER_PVTKEY\"]" \
       --hard-replay \
       -e \
       &
